@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TracerStudy {
+  id              Int              @id @default(autoincrement())
+  namaInstitusi   String           @map("nama_institusi")
+  namaProdi       String           @map("nama_prodi")
+  jenjang         String           @db.VarChar(20)
+  tahunLulusan    String           @map("tahun_lulusan") @db.VarChar(4)
+  tahunTracer     String           @map("tahun_tracer") @db.VarChar(4)
+  totalLulusan    Int              @map("total_lulusan")
+  totalResponden  Int              @default(0) @map("total_responden")
+  responseRate    Decimal          @default(0) @map("response_rate") @db.Decimal(5, 2)
+  status          String           @default("processing") @db.VarChar(20)
+  filePath        String?          @map("file_path")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  analysisResults AnalysisResult[]
+  reports         Report[]
+
+  @@unique([namaProdi, tahunLulusan, tahunTracer], name: "tracer_unique")
+  @@index([tahunTracer])
+  @@index([status])
+  @@map("tracer_studies")
+}
+
+model AnalysisResult {
+  id             Int          @id @default(autoincrement())
+  tracerStudyId  Int          @map("tracer_study_id")
+  parameterKey   String       @map("parameter_key") @db.VarChar(50)
+  parameterName  String       @map("parameter_name")
+  statisticType  String       @map("statistic_type") @db.VarChar(20)
+  resultData     Json         @map("result_data")
+  chartConfig    Json?        @map("chart_config")
+  narrative      String?      @db.Text
+  order          Int          @default(0) @db.SmallInt
+
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  tracerStudy    TracerStudy  @relation(fields: [tracerStudyId], references: [id], onDelete: Cascade)
+
+  @@unique([tracerStudyId, parameterKey], name: "analysis_unique")
+  @@map("analysis_results")
+}
+
+model Report {
+  id             Int          @id @default(autoincrement())
+  tracerStudyId  Int          @map("tracer_study_id")
+  filename       String
+  filePath       String       @map("file_path")
+  fileSize       Int?         @map("file_size")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  tracerStudy    TracerStudy  @relation(fields: [tracerStudyId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
