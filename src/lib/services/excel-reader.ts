@@ -78,15 +78,28 @@ function readColumn(
   return values;
 }
 
+function findSheet(workbook: XLSX.WorkBook): XLSX.WorkSheet {
+  const exact = workbook.Sheets[EXCEL_CONFIG.sheet_name];
+  if (exact) return exact;
+
+  const target = EXCEL_CONFIG.sheet_name.toLowerCase();
+  for (const name of workbook.SheetNames) {
+    if (name.toLowerCase().includes(target) || name.toLowerCase().includes("tracer")) {
+      return workbook.Sheets[name];
+    }
+  }
+
+  return workbook.Sheets[workbook.SheetNames[0]];
+}
+
 export function readExcel(buffer: Buffer): RawData {
   const workbook = XLSX.read(buffer, { type: "buffer" });
-  const sheetName = EXCEL_CONFIG.sheet_name;
-  const sheet = workbook.Sheets[sheetName];
+  const sheet = findSheet(workbook);
 
   if (!sheet) {
     const available = workbook.SheetNames.join(", ");
     throw new Error(
-      `Sheet "${sheetName}" tidak ditemukan. Sheet tersedia: ${available}`,
+      `Sheet tidak ditemukan. Sheet tersedia: ${available}`,
     );
   }
 
