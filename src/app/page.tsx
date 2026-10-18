@@ -1,69 +1,168 @@
-import Image from "next/image";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import DeleteTracerButton from "@/components/delete-tracer-button";
 
-export default function Home() {
+export const instant = false;
+
+export default async function DashboardPage() {
+  let tracerStudies: Awaited<ReturnType<typeof prisma.tracerStudy.findMany>> = [];
+  let totalReports = 0;
+
+  try {
+    tracerStudies = await prisma.tracerStudy.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { _count: { select: { reports: true } } },
+    });
+    totalReports = await prisma.report.count();
+  } catch {
+    // DB not connected yet — show empty state
+  }
+
+  const totalStudies = tracerStudies.length;
+  const completedStudies = tracerStudies.filter(
+    (s) => s.status === "completed",
+  ).length;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <StatCard
+          title="Total Tracer Study"
+          value={totalStudies}
+          color="blue"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <StatCard
+          title="Analisis Selesai"
+          value={completedStudies}
+          color="green"
+        />
+        <StatCard title="Laporan Dibuat" value={totalReports} color="purple" />
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Data Tracer Study
+          </h2>
+          <Link
+            href="/upload"
+            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            + Upload Baru
+          </Link>
         </div>
-      </main>
+
+        {tracerStudies.length === 0 ? (
+          <div className="p-12 text-center text-gray-500">
+            Belum ada data tracer study. Mulai dengan mengupload file Excel.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-600">
+                <tr>
+                  <th className="px-6 py-3 text-left font-medium">
+                    Program Studi
+                  </th>
+                  <th className="px-6 py-3 text-left font-medium">Jenjang</th>
+                  <th className="px-6 py-3 text-left font-medium">
+                    Tahun Lulusan
+                  </th>
+                  <th className="px-6 py-3 text-left font-medium">
+                    Tahun Tracer
+                  </th>
+                  <th className="px-6 py-3 text-right font-medium">
+                    Responden
+                  </th>
+                  <th className="px-6 py-3 text-center font-medium">Status</th>
+                  <th className="px-6 py-3 text-center font-medium">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {tracerStudies.map((study) => (
+                  <tr key={study.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-3 font-medium text-gray-900">
+                      {study.namaProdi}
+                    </td>
+                    <td className="px-6 py-3 text-gray-600">
+                      {study.jenjang}
+                    </td>
+                    <td className="px-6 py-3 text-gray-600">
+                      {study.tahunLulusan}
+                    </td>
+                    <td className="px-6 py-3 text-gray-600">
+                      {study.tahunTracer}
+                    </td>
+                    <td className="px-6 py-3 text-right text-gray-600">
+                      {study.totalResponden}
+                    </td>
+                    <td className="px-6 py-3 text-center">
+                      <StatusBadge status={study.status} />
+                    </td>
+                    <td className="px-6 py-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {study.status === "completed" && (
+                          <Link
+                            href={`/analysis/${study.id}`}
+                            className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                          >
+                            Lihat
+                          </Link>
+                        )}
+                        <DeleteTracerButton id={study.id} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  color,
+}: {
+  title: string;
+  value: number;
+  color: "blue" | "green" | "purple";
+}) {
+  const colorMap = {
+    blue: "bg-blue-50 text-blue-700 border-blue-200",
+    green: "bg-green-50 text-green-700 border-green-200",
+    purple: "bg-purple-50 text-purple-700 border-purple-200",
+  };
+  return (
+    <div className={`rounded-xl border p-5 ${colorMap[color]}`}>
+      <p className="text-sm font-medium opacity-80">{title}</p>
+      <p className="text-3xl font-bold mt-1">{value}</p>
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    completed: "bg-green-100 text-green-700",
+    processing: "bg-yellow-100 text-yellow-700",
+    failed: "bg-red-100 text-red-700",
+  };
+  const labelMap: Record<string, string> = {
+    completed: "Selesai",
+    processing: "Proses",
+    failed: "Gagal",
+  };
+  return (
+    <span
+      className={`inline-block px-2.5 py-0.5 text-xs font-medium rounded-full ${map[status] ?? "bg-gray-100 text-gray-700"}`}
+    >
+      {labelMap[status] ?? status}
+    </span>
   );
 }
