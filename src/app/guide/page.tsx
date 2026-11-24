@@ -17,12 +17,12 @@ export default function GuidePage() {
             <Step
               num={1}
               title="Upload Data"
-              desc="Siapkan file Excel format DIKTI. Pastikan terdapat sheet bernama 'data tracer' dengan header f-code di baris 4 dan data mulai baris 5. Isi form metadata (institusi, prodi, jenjang, tahun lulusan, tahun tracer, total lulusan), lalu upload file."
+              desc="Siapkan file Excel/CSV data tracer: ekspor template DIKTI, ekspor instrumen periode 2027, atau unduhan Google Sheet hasil form tracer. Pastikan ada baris header berisi f-code (f8, f502, dst.). Isi form metadata (institusi, prodi, jenjang, tahun lulusan, tahun tracer, total lulusan), lalu upload file."
             />
             <Step
               num={2}
               title="Proses Analisis"
-              desc="Sistem akan membaca file Excel, mengekstrak data berdasarkan 14 parameter tracer study, menghitung statistik, dan menghasilkan narasi otomatis untuk setiap parameter."
+              desc="Sistem mendeteksi versi instrumen (lama atau periode 2027), membaca data per cabang status F8, mengekstrak hingga 18 parameter tracer study (termasuk item internal H1–H3 bila ada), menghitung statistik, dan menghasilkan narasi otomatis untuk setiap parameter."
             />
             <Step
               num={3}
@@ -81,17 +81,30 @@ export default function GuidePage() {
         <Section title="Persyaratan File Excel">
           <ul className="list-disc list-inside text-sm text-gray-700 space-y-2">
             <li>
-              Format: <strong>.xlsx</strong> atau <strong>.xls</strong>
+              Format: <strong>.xlsx</strong>, <strong>.xls</strong>, atau{" "}
+              <strong>.csv</strong>
             </li>
             <li>
-              Harus memiliki sheet bernama{" "}
+              Baris header berisi f-code (f8, f502, f505, dst.) di 15 baris
+              pertama; data responden dimulai tepat di bawahnya. Template DIKTI
+              (judul di baris 1–3, header di baris 4) tetap didukung.
+            </li>
+            <li>
+              Sheet dipilih otomatis: sheet{" "}
               <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">
                 data tracer
-              </code>
+              </code>{" "}
+              diutamakan, lalu sheet lain yang memuat header f8.
             </li>
-            <li>Baris 1-3: Judul/keterangan (diabaikan)</li>
-            <li>Baris 4: Header f-code (f8, f502, f505, dst.)</li>
-            <li>Baris 5 ke bawah: Data responden</li>
+            <li>
+              Instrumen periode 2027 dikenali dari kolom barunya (f5a0, f5e,
+              f1775–f1782, f28–f37): label F14 memakai skala relevansi, F1101
+              tanpa kode 4, dan 11 kompetensi dihitung.
+            </li>
+            <li>
+              Kolom opsional (f5e, h1, h2, h3, tempat kerja/studi) boleh tidak
+              ada; parameternya dilewati.
+            </li>
           </ul>
         </Section>
 
@@ -103,7 +116,7 @@ export default function GuidePage() {
             />
             <FAQ
               q="Format Excel apa yang didukung?"
-              a="File Excel format DIKTI (.xlsx/.xls) dengan sheet 'data tracer'. Header f-code di baris 4 sesuai standar pelaporan DIKTI."
+              a="File Excel/CSV (.xlsx/.xls/.csv) yang memiliki baris header f-code: template DIKTI lama, ekspor instrumen periode 2027, atau Google Sheet hasil form tracer."
             />
             <FAQ
               q="Bisakah mengupload data yang sama dua kali?"

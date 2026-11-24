@@ -33,6 +33,7 @@ export function generateNarrative(
     top_index_a: String(stats.top_index_a ?? 0),
     gap_competency: stats.gap_competency ?? "-",
     gap_value: String(stats.gap_value ?? 0),
+    competency_count: String(Object.keys(stats.competencies ?? {}).length),
   };
 
   if (stats.mean !== undefined) {
