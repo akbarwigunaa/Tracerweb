@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { PARAMETERS } from "@/lib/config/tracer";
-import { readExcel, type RawData } from "./excel-reader";
+import { PARAMETERS, resolveParameter } from "@/lib/config/tracer";
+import { readExcel } from "./excel-reader";
 import { calculate } from "./statistics";
 import { generateNarrative } from "./narrative";
 import { generateChartConfig } from "./chart-config";
@@ -12,14 +12,6 @@ interface TracerMeta {
   tahun_lulusan: string;
   tahun_tracer: string;
   total_lulusan: number;
-}
-
-function countResponden(rawData: RawData): number {
-  const firstKey = Object.keys(rawData)[0];
-  if (!firstKey) return 0;
-  const firstParam = rawData[firstKey];
-  if (Array.isArray(firstParam)) return firstParam.length;
-  return 0;
 }
 
 export async function processTracer(
@@ -41,8 +33,7 @@ export async function processTracer(
   });
 
   try {
-    const rawData = readExcel(fileBuffer);
-    const totalResponden = countResponden(rawData);
+    const { data: rawData, version, totalResponden } = readExcel(fileBuffer);
     const responseRate =
       meta.total_lulusan > 0
         ? Math.round((totalResponden / meta.total_lulusan) * 10000) / 100
@@ -59,8 +50,11 @@ export async function processTracer(
       tahun_lulusan: meta.tahun_lulusan,
     };
 
-    for (const [key, paramConfig] of Object.entries(PARAMETERS)) {
-      const paramData = rawData[key] ?? [];
+    for (const [key, baseConfig] of Object.entries(PARAMETERS)) {
+      // Parameter yang tidak berlaku untuk versi instrumen ini atau kolomnya tidak ada dilewati.
+      if (!(key in rawData)) continue;
+      const paramConfig = resolveParameter(baseConfig, version);
+      const paramData = rawData[key];
       const statsResult = calculate(key, paramConfig, paramData);
       const narrativeText = generateNarrative(key, statsResult, narrativeMeta);
       const chartCfg = generateChartConfig(key, paramConfig, statsResult);
